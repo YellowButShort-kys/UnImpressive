@@ -14,6 +14,7 @@ local unique_names = {}
 
 local base = {__index = require(cwd..".base")}
 
+local input = require(cwd.."io")
 
 local main = require(cwd..".blank")
 setmetatable(main, base)
@@ -83,63 +84,12 @@ function ui.Draw()
 end
 
 local clickproxy = {}
-function ui.Update(dt, name, x, y)
-    --for name, x, y in love.event.poll() do
-        if name == "mousepressed" then
-            for _, var in ipairs(hub) do
-                if var.Clickable and not var.disable then
-                    if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
-                        var:onPress(x, y)
-                        clickproxy[var] = true
-                    else
-                        clickproxy[var] = false
-                    end
-                end
-            end
+function ui.Update(dt)
+    for _, var in ipairs(hub) do
+        if var.Update then
+            var:Update(dt)
         end
-    
-        if name == "mousereleased" then
-            for _, var in ipairs(hub) do
-                if var.Clickable and not var.disable and clickproxy[var] then
-                    if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
-                        var:onClick(x, y)
-                    else
-                        var:onFailedClick(x, y)
-                    end
-                    var:onRelease(x, y)
-                    clickproxy[var] = false
-                end
-            end
-        end
-    
-        if name == "mousemoved" then
-            for _, var in ipairs(hub) do
-                if var.onHover and not var.disable then  
-                    if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
-                        if not var._hover then
-                            var._hover = true
-                            var:onHover()
-                        end
-                    else
-                        if var._hover then
-                            var._hover = false
-                            if var.onLeave then
-                                var:onLeave()
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    
-        if name == "wheelmoved" then
-            for _, var in ipairs(hub) do
-                if var.onScroll and not var.disable and var.scrollable then
-                    var:onScroll(x, y)
-                end
-            end
-        end
-    --end
+    end
 end
 
 local function HiddenIteration(folder, tbl)
@@ -186,6 +136,13 @@ function ui.LoadFolder(path)
         local piece = require(var:sub(0, -5))
         ui_lib[piece.id or var:match('[^/]+$'):sub(0, -5)] = piece
     end
+
+    
+    for _, var in pairs(ui_lib) do
+        setmetatable(var, base)
+        var:__init(unique_names)
+        var:Init(ui)
+    end
 end
 
 
@@ -196,11 +153,61 @@ for _, var in ipairs(IterateThroughFolder(cwd:gsub("%.", "%/").."/presets")) do
     end
 end
 
+function input.mousepressed(x, y, btn)
+    for _, var in ipairs(hub) do
+        if var.Clickable and not var.disable then
+            if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
+                var:onPress(x, y, btn)
+                clickproxy[var] = true
+                return true
+            else
+                clickproxy[var] = false
+            end
+        end
+    end
+end
 
-for _, var in pairs(ui_lib) do
-    setmetatable(var, base)
-    var:__init(unique_names)
-    var:Init(ui)
+function input.mousereleased(x, y, btn)
+    for _, var in ipairs(hub) do
+        if var.Clickable and not var.disable and clickproxy[var] then
+            if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
+                var:onClick(x, y, btn)
+                return true
+            else
+                var:onFailedClick(x, y, btn)
+            end
+            var:onRelease(x, y)
+            clickproxy[var] = false
+        end
+    end
+end
+
+function input.mousemoved(x, y)
+    for _, var in ipairs(hub) do
+        if var.onHover and not var.disable then  
+            if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
+                if not var._hover then
+                    var._hover = true
+                    var:onHover()
+                end
+            else
+                if var._hover then
+                    var._hover = false
+                    if var.onLeave then
+                        var:onLeave()
+                    end
+                end
+            end
+        end
+    end
+end
+
+function input.wheelmoved(x, y)
+    for _, var in ipairs(hub) do
+        if var.onScroll and not var.disable and var.scrollable then
+            var:onScroll(x, y)
+        end
+    end
 end
 
 return ui
