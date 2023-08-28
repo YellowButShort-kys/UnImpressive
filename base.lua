@@ -13,6 +13,7 @@ base.paddingX = 0
 base.paddingY = 0
 base.Clickable = true
 base.IgnoreScissors = false
+base.__type = "ui_piece"
 
 local proxy --i'm genius
 
@@ -185,6 +186,9 @@ end
 
 function base:Enable()
     self.disable = false
+    if self.onEnable then
+        self:onEnable()
+    end
     for _, var in ipairs(self.children) do
         var:Enable()
     end
@@ -192,6 +196,9 @@ function base:Enable()
 end
 function base:Disable()
     self.disable = true
+    if self.onDisable then
+        self:onDisable()
+    end
     for _, var in ipairs(self.children) do
         var:Disable()
     end
@@ -202,13 +209,20 @@ function base:Toggle()
     return self
 end
 
+function base:EnableCursorLink()
+    self.CursorLink = true
+end
+function base:DisableCursorLink()
+    self.CursorLink = nil
+end
+
 function base:Draw()
     if not self.disable then
         love.graphics.push("all")
         love.graphics.translate(self.posX, self.posY)
         love.graphics.scale(self.scale)
         if not self.IgnoreScissors then
-            love.graphics.intersectScissor(self.absposX, self.absposY, self.sizeX, self.sizeY)
+            --love.graphics.intersectScissor(self.absposX, self.absposY, self.sizeX, self.sizeY)
         end
         self:Paint()
         if DEBUG_WIREFRAME then
