@@ -29,7 +29,7 @@ end
 ---
 function base:SetPos(x, y)
     self.posX = x
-    self.posY = y
+    self.posY = y or x
 
     self:UpdateAbsolutePos()
 
@@ -37,7 +37,7 @@ function base:SetPos(x, y)
 end
 function base:SetDPos(dx, dy)
     self.posX = self.posX + dx
-    self.posY = self.posY + dy
+    self.posY = self.posY + dy or dx
 
     self:UpdateAbsolutePos()
     return self
@@ -80,7 +80,7 @@ function base:SetSizeY(y)
 end
 function base:SetSize(x, y)
     self.sizeX = x
-    self.sizeY = y
+    self.sizeY = y or x
     return self
 end
 
@@ -249,6 +249,10 @@ function base:Remove()
         end
     end
     self = nil
+end
+
+function base:CheckCollision(x, y)
+    return x > self.absposX and x < self.absposX + self.sizeX and y > self.absposY and y < self.absposY + self.sizeY
 end
 
 function base:onCreate()
