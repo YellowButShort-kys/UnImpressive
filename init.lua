@@ -171,7 +171,7 @@ end
 ----------------------------------------------- INPUT -----------------------------------------------
 -----------------------------------------------------------------------------------------------------
 
-local input = require("UnImpressive.io")
+local input = require(cwd..".io")
 local function mpiter(ent, x, y, btn)
     if not ent.disable then
         local res = false
