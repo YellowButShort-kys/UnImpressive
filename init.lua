@@ -7,6 +7,9 @@ local cwd = ...
 local ui = {}
 
 local hub = {}
+local tree_hub = {}
+
+local CursorLink = {}
 
 local ui_lib = {}
 
@@ -14,12 +17,13 @@ local unique_names = {}
 
 local base = {__index = require(cwd..".base")}
 
-local input = require(cwd.."io")
+--local input = require(cwd.."io")
 
 local main = require(cwd..".blank")
 setmetatable(main, base)
 main:__precreate()
 main:onCreate()
+table.insert(tree_hub, main)
 
 
 
@@ -35,14 +39,24 @@ function ui.CreateUI(name, father, ...)
     table.insert(hub, ent)
     ent:__precreate()
     if not ent.Detached then
-        ent:SetFather(father or main)
+        ent:SetFather(father and father.__type == "ui_piece" and father or main)
     end
-    ent:onCreate(...)
+    ent:onCreate(father and father.__type ~= "ui_piece" and father or ..., ...)
 
     return ent
 end
 
----Compiles the UI piece to be later created, does not add it to the main library (can't be created via CreateUI)
+---Creates blank UI. Think of it as a canvas. It is not tied to the main piece, so it can be safely used with camera and what not. Use it as a father for other pieces
+---@return ui_piece
+function ui.CreateBlank()
+    local blank = setmetatable({}, {__index = main})
+    blank:__precreate()
+    blank:onCreate()
+    table.insert(tree_hub, blank)
+    return blank
+end
+
+---Compiles the UI piece to be later created. Does not add it to the main library (can't be created via CreateUI)
 ---<br>Simply store the function and run when needed with specified father if neccessary
 ---@param code table
 ---@return fun(father: ui_piece, ...)
@@ -140,7 +154,7 @@ function ui.LoadFolder(path)
     
     for _, var in pairs(ui_lib) do
         setmetatable(var, base)
-        var:__init(unique_names)
+        var:__init(unique_names, CursorLink)
         var:Init(ui)
     end
 end
@@ -153,51 +167,110 @@ for _, var in ipairs(IterateThroughFolder(cwd:gsub("%.", "%/").."/presets")) do
     end
 end
 
+-----------------------------------------------------------------------------------------------------
+----------------------------------------------- INPUT -----------------------------------------------
+-----------------------------------------------------------------------------------------------------
+
+local input = require("UnImpressive.io")
+local function mpiter(ent, x, y, btn)
+    if not ent.disable then
+        local res = false
+        for _, var in ipairs(ent.children) do
+            local lres = mpiter(var, x, y, btn)
+            res = res or lres
+        end
+        if res then
+            return true
+        end
+
+        if ent.Clickable then
+            if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
+                ent:onPress(x, y, btn)
+                clickproxy[ent] = true
+                return true
+            else
+                clickproxy[ent] = false
+            end
+        end
+    end
+    return false
+end
 function input.mousepressed(x, y, btn)
-    for _, var in ipairs(hub) do
-        if var.Clickable and not var.disable then
-            if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
-                var:onPress(x, y, btn)
-                clickproxy[var] = true
-                return true
-            else
-                clickproxy[var] = false
-            end
-        end
+    for _, var in ipairs(tree_hub) do
+        mpiter(var, x, y, btn)
     end
 end
 
+
+local function mriter(ent, x, y, btn)
+    if not ent.disable then
+        local res = false
+        for _, var in ipairs(ent.children) do
+            local lres = mriter(var, x, y, btn)
+            res = res or lres
+        end
+        if res then
+            return true
+        end
+
+        if ent.Clickable and clickproxy[ent] then
+            if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
+                ent:onClick(x, y, btn)
+                return true
+            else                
+                ent:onFailedClick(x, y, btn)
+            end
+            ent:onRelease(x, y)
+            clickproxy[ent] = false
+        end
+    end
+
+    return false
+end
 function input.mousereleased(x, y, btn)
-    for _, var in ipairs(hub) do
-        if var.Clickable and not var.disable and clickproxy[var] then
-            if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
-                var:onClick(x, y, btn)
-                return true
-            else
-                var:onFailedClick(x, y, btn)
-            end
-            var:onRelease(x, y)
-            clickproxy[var] = false
-        end
+    for _, var in ipairs(tree_hub) do
+        mriter(var, x, y, btn)
     end
 end
 
-function input.mousemoved(x, y)
-    for _, var in ipairs(hub) do
-        if var.onHover and not var.disable then  
-            if x > var.absposX and x < var.absposX + var.sizeX and y > var.absposY and y < var.absposY + var.sizeY then
-                if not var._hover then
-                    var._hover = true
-                    var:onHover()
+
+
+
+local function mmiter(ent, x, y)
+    if not ent.disable then
+        for _, var in ipairs(ent.children) do
+            mmiter(var, x, y)
+        end
+
+        if ent.onHover and not ent.disable then  
+            if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
+                if not ent._hover then
+                    ent._hover = true
+                    ent:onHover()
                 end
             else
-                if var._hover then
-                    var._hover = false
-                    if var.onLeave then
-                        var:onLeave()
+                if ent._hover then
+                    ent._hover = false
+                    if ent.onLeave then
+                        ent:onLeave()
                     end
                 end
             end
+        end
+    end
+end
+function input.mousemoved(x, y, dx, dy)
+    for _, var in ipairs(tree_hub) do
+        mmiter(var, x, y)
+    end
+    for _, var in ipairs(hub) do
+        if var.CursorLink then
+            var:SetPos(x, y)
+        end
+    end
+    for _, var in ipairs(hub) do
+        if var.onMouseMove then
+            var:onMouseMove(x, y, dx, dy)
         end
     end
 end

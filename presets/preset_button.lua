@@ -2,6 +2,7 @@ local ent = {}
 
 ent.sizeX = 0
 ent.sizeY = 0
+ent.Clickable = true
 
 function ent:Paint()
     if self.Texture then
