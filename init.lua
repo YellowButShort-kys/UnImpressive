@@ -1,5 +1,9 @@
 ---@enum ui_piece
-
+---@alias ui_piece_id
+---| 'preset_button'
+---| 'preset_dropdown'
+---| 'preset_scroll'
+---| 'preset_table'
 
 
 local cwd = ...
@@ -28,7 +32,7 @@ table.insert(tree_hub, main)
 
 
 ---Creates the UI Piece from the "name" and ties it to the "father". Additional arguments are passed to :onCreate()
----@param name string
+---@param name ui_piece_id
 ---@param father ui_piece?
 ---@return ui_piece
 function ui.CreateUI(name, father, ...)
@@ -38,6 +42,7 @@ function ui.CreateUI(name, father, ...)
     setmetatable(ent, {__index = ui_lib[name]})
     table.insert(hub, ent)
     ent:__precreate()
+    ent:onInit(father and father.__type ~= "ui_piece" and father or ..., ...)
     if not ent.Detached then
         ent:SetFather(father and father.__type == "ui_piece" and father or main)
     end
@@ -71,10 +76,11 @@ function ui.Compile(code)
         setmetatable(ent, {__index = code})
         table.insert(hub, ent)
         ent:__precreate()
+        ent:onInit(father and father.__type ~= "ui_piece" and father or ..., ...)
         if not ent.Detached then
             ent:SetFather(father or main)
         end
-        ent:onCreate(...)
+        ent:onCreate(father and father.__type ~= "ui_piece" and father or ..., ...)
         return ent
     end
 
@@ -182,7 +188,6 @@ local function mpiter(ent, x, y, btn)
         if res then
             return true
         end
-
         if ent.Clickable then
             if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
                 ent:onPress(x, y, btn)
@@ -244,13 +249,13 @@ local function mmiter(ent, x, y)
 
         if ent.onHover and not ent.disable then  
             if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
-                if not ent._hover then
-                    ent._hover = true
+                if not ent.__hover then
+                    ent.__hover = true
                     ent:onHover()
                 end
             else
-                if ent._hover then
-                    ent._hover = false
+                if ent.__hover then
+                    ent.__hover = false
                     if ent.onLeave then
                         ent:onLeave()
                     end

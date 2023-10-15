@@ -1,4 +1,4 @@
----@type ui_piece 
+---@class ui_piece 
 local base = {}
 
 base.posX = 0
@@ -13,6 +13,7 @@ base.paddingX = 0
 base.paddingY = 0
 base.Clickable = true
 base.IgnoreScissors = false
+base.DeepDisable = true
 base.__type = "ui_piece"
 
 local proxy --i'm genius
@@ -189,8 +190,10 @@ function base:Enable()
     if self.onEnable then
         self:onEnable()
     end
-    for _, var in ipairs(self.children) do
-        var:Enable()
+    if self.DeepDisable then
+        for _, var in ipairs(self.children) do
+            var:Enable()
+        end
     end
     return self
 end
@@ -199,14 +202,20 @@ function base:Disable()
     if self.onDisable then
         self:onDisable()
     end
-    for _, var in ipairs(self.children) do
-        var:Disable()
+    if self.DeepDisable then
+        for _, var in ipairs(self.children) do
+            var:Disable()
+        end
     end
     return self
 end
 function base:Toggle()
     self.disable = not self.disable
     return self
+end
+
+function base:IsHovered()
+    return self.__hover or false
 end
 
 function base:EnableCursorLink()
@@ -269,6 +278,8 @@ function base:CheckCollision(x, y)
     return x > self.absposX and x < self.absposX + self.sizeX and y > self.absposY and y < self.absposY + self.sizeY
 end
 
+function base:onInit()
+end
 function base:onCreate()
 end
 function base:onPress()

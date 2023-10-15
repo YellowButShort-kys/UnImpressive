@@ -13,6 +13,7 @@ end
 
 function ent:SetRowSize(size)
     self.rowsize = size
+    self:UpdatePlacement()
 end
 function ent:GetRowSize()
     return self.rowsize
@@ -21,18 +22,21 @@ end
 function ent:SetMargin(x, y)
     self.marginX = x
     self.marginY = y
+    self:UpdatePlacement()
 end
 function ent:GetMargin()
     return self.marginX, self.marginY    
 end
 function ent:SetMarginX(x)
     self.marginX = x
+    self:UpdatePlacement()
 end
 function ent:GetMarginX()
     return self.marginX
 end
 function ent:SetMarginY(y)
     self.marginY = y
+    self:UpdatePlacement()
 end
 function ent:GetMarginY()
     return self.marginY
@@ -54,8 +58,8 @@ function ent:UpdatePlacement()
             end
 
             child:SetPos(
-                ((self.sizeX-self.marginX/2) / self.rowsize * (x)) - (child:GetSizeX() / 2) + self.marginX,
-                (offy) - (child:GetSizeY() / 2) + self.marginY
+                ((self.sizeX-self.marginX/2) / self.rowsize * (x)) - (child:GetSizeX() / 2) + self.marginX + self.sizeX/2,
+                (offy) + self.marginY
             )
             _offy = math.max(child:GetSizeY()*1.1, _offy)
         end
