@@ -18,9 +18,8 @@ local CursorLink = {}
 local ui_lib = {}
 
 local unique_names = {}
-
+require(cwd..".base")
 local base = {__index = require(cwd..".base")}
-
 --local input = require(cwd.."io")
 
 local main = require(cwd..".blank")
@@ -46,6 +45,7 @@ function ui.CreateUI(name, father, ...)
     if not ent.Detached then
         ent:SetFather(father and father.__type == "ui_piece" and father or main)
     end
+    ent:UpdateAbsolutePos()
     ent:onCreate(father and father.__type ~= "ui_piece" and father or ..., ...)
 
     return ent
@@ -68,7 +68,7 @@ end
 function ui.Compile(code)
     assert(type(code)=="table", "Expected table, got: "..type(code))
     setmetatable(code, base)
-    
+
     ---@param father ui_piece?
     ---@return ui_piece
     local a = function(father, ...)
@@ -78,7 +78,7 @@ function ui.Compile(code)
         ent:__precreate()
         ent:onInit(father and father.__type ~= "ui_piece" and father or ..., ...)
         if not ent.Detached then
-            ent:SetFather(father or main)
+            ent:SetFather(father and father.__type == "ui_piece" and father or main)
         end
         ent:onCreate(father and father.__type ~= "ui_piece" and father or ..., ...)
         return ent
@@ -91,9 +91,9 @@ require(cwd..".base").CreateUI = function(self, name, ...)
     return ui.CreateUI(name, self, ...)
 end
 
----Returns an UI Piece with an unique id that was set using :SetUniqueName(). 
+---Returns an UI Piece with an unique id that was set using :SetUniqueName().
 ---@param id any
----@return ui_piece 
+---@return ui_piece
 function ui.GetUnique(id)
     return unique_names[id]
 end
@@ -155,9 +155,10 @@ function ui.LoadFolder(path)
     for _, var in ipairs(IterateThroughFolder(path)) do
         local piece = require(var:sub(0, -5))
         ui_lib[piece.id or var:match('[^/]+$'):sub(0, -5)] = piece
+        print((piece.id or var:match('[^/]+$'):sub(0, -5))..": Loaded...")
     end
 
-    
+
     for _, var in pairs(ui_lib) do
         setmetatable(var, base)
         var:__init(unique_names, CursorLink)
@@ -178,6 +179,7 @@ end
 -----------------------------------------------------------------------------------------------------
 
 local input = require(cwd..".io")
+
 local function mpiter(ent, x, y, btn)
     if not ent.disable then
         local res = false
@@ -222,7 +224,7 @@ local function mriter(ent, x, y, btn)
             if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
                 ent:onClick(x, y, btn)
                 return true
-            else                
+            else
                 ent:onFailedClick(x, y, btn)
             end
             ent:onRelease(x, y)
@@ -247,7 +249,7 @@ local function mmiter(ent, x, y)
             mmiter(var, x, y)
         end
 
-        if ent.onHover and not ent.disable then  
+        if ent.onHover and not ent.disable then
             if x > ent.absposX and x < ent.absposX + ent.sizeX and y > ent.absposY and y < ent.absposY + ent.sizeY then
                 if not ent.__hover then
                     ent.__hover = true

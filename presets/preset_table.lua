@@ -3,6 +3,8 @@ local ent = {}
 ent.rowsize = 5
 ent.marginX = 0
 ent.marginY = 0
+ent.paddingX = 0
+ent.paddingY = 0
 
 function ent:AddChild(child)
     table.insert(self.children, child)
@@ -25,7 +27,7 @@ function ent:SetMargin(x, y)
     self:UpdatePlacement()
 end
 function ent:GetMargin()
-    return self.marginX, self.marginY    
+    return self.marginX, self.marginY
 end
 function ent:SetMarginX(x)
     self.marginX = x
@@ -42,7 +44,38 @@ function ent:GetMarginY()
     return self.marginY
 end
 
+function ent:SetPaddingX(x)
+    self.paddingX = x
+    self:UpdatePlacement()
+end
+function ent:SetPaddingY(y)
+    self.paddingY = y
+    self:UpdatePlacement()
+end
+function ent:SetPadding(x, y)
+    self.paddingX = x
+    self.paddingY = y
+    self:UpdatePlacement()
+end
+function ent:GetPaddingX()
+    return self.paddingX
+end
+function ent:GetPaddingY()
+    return self.paddingY
+end
+function ent:GetPadding()
+    return self.paddingX, self.paddingY
+end
+
+function ent:Lock()
+    self.lock = true
+end
+function ent:Unlock()
+    self.lock = false
+end
+
 function ent:UpdatePlacement()
+    if self.lock then return end
     local offy = 0
     local y = 0
     local _x = 0
@@ -57,8 +90,9 @@ function ent:UpdatePlacement()
                 break
             end
 
+            ----TODO: Fix this shit. Rn padding works like shit
             child:SetPos(
-                ((self.sizeX-self.marginX/2) / self.rowsize * (x)) - (child:GetSizeX() / 2) + self.marginX + self.sizeX/2,
+                ((self.sizeX-self.marginX/2) / self.rowsize * (x)) + self.marginX + x * self.paddingX,
                 (offy) + self.marginY
             )
             _offy = math.max(child:GetSizeY()*1.1, _offy)

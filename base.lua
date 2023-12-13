@@ -1,4 +1,4 @@
----@class ui_piece 
+---@class ui_piece
 local base = {}
 
 base.posX = 0
@@ -12,7 +12,7 @@ base.disable = false
 base.paddingX = 0
 base.paddingY = 0
 base.Clickable = true
-base.IgnoreScissors = false
+base.IgnoreScissors = true
 base.DeepDisable = true
 base.__type = "ui_piece"
 
@@ -21,9 +21,8 @@ local proxy --i'm genius
 function base:__init(p)
     proxy = p
 end
-function base:__precreate() 
+function base:__precreate()
     self.children = {}
-    self:UpdateAbsolutePos()
 end
 function base:Init()
 end
@@ -105,7 +104,7 @@ end
 
 function base:SetX(x)
     self.posX = x
-    
+
     self:UpdateAbsolutePos()
     return self
 end
@@ -184,6 +183,9 @@ end
 function base:GetFather()
     return self.father
 end
+function base:GetChildren()
+    return self.children
+end
 
 function base:Enable()
     self.disable = false
@@ -225,19 +227,24 @@ function base:DisableCursorLink()
     self.CursorLink = nil
 end
 
+--DEBUG_WIREFRAME = true
 function base:Draw()
     if not self.disable then
         love.graphics.push("all")
         love.graphics.translate(self.posX, self.posY)
         love.graphics.scale(self.scale)
         if not self.IgnoreScissors then
-            --love.graphics.intersectScissor(self.absposX, self.absposY, self.sizeX, self.sizeY)
+            love.graphics.intersectScissor(self.absposX, self.absposY, self.sizeX, self.sizeY)
         end
         self:Paint()
         if DEBUG_WIREFRAME then
+            love.graphics.push("all")
+            love.graphics.origin()
+            love.graphics.translate(self.absposX, self.absposY)
             love.graphics.line(0, 0, self.sizeX, 0, self.sizeX, self.sizeY, 0, self.sizeY, 0, 0)
             love.graphics.line(0, 0, self.sizeX, self.sizeY)
             love.graphics.line(self.sizeX, 0, 0, self.sizeY)
+            love.graphics.pop()
         end
         for _, var in ipairs(self.children) do
             --love.graphics.intersectScissor(self.paddingX, self.paddingY, self.sizeX-self.paddingX, self.sizeY-self.paddingY)
@@ -251,7 +258,7 @@ end
 function base:Paint()
 end
 function base:Update(dt)
-    
+
 end
 function base:_Update(dt)
     self:Update(dt)
@@ -268,7 +275,7 @@ function base:Remove()
     for _, var in ipairs(self.father.children) do
         if var == self then
             table.remove(self.father.children, _)
-            break 
+            break
         end
     end
     self = nil
@@ -295,13 +302,13 @@ end
 
 -----------------------DOCKING CONVERSION FUNCTIONS------------------------
 
---West = 1, NorthWest = 2, North = 3, NorthEast = 4, East = 5, SouthEast = 6, South = 7, SouthWest = 8
+--West = 1, NorthWest = 2, North = 3, NorthEast = 4, East = 5, SouthEast = 6, South = 7, SouthWest = 8, Center = 9
 
 _df[1] = function(x, y, fx, fy)
     return 0, fy/2 - y/2
 end
 _df[2] = function(x, y, fx, fy)
-    return 0, 0 
+    return 0, 0
 end
 _df[3] = function(x, y, fx, fy)
     return fx/2 - x/2, 0
