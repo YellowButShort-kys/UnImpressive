@@ -35,10 +35,10 @@ table.insert(tree_hub, main)
 ---@param father ui_piece?
 ---@return ui_piece
 function ui.CreateUI(name, father, ...)
-    assert(ui_lib[name], "Incorrect UI name: "..name)
+    assert(not name or ui_lib[name], "Incorrect UI name: "..(name or "nil"))
 
     local ent = {}
-    setmetatable(ent, {__index = ui_lib[name]})
+    setmetatable(ent, not name and base or {__index = ui_lib[name]})
     table.insert(hub, ent)
     ent:__precreate()
     ent:onInit(father and father.__type ~= "ui_piece" and father or ..., ...)
@@ -88,7 +88,7 @@ function ui.Compile(code)
 end
 
 require(cwd..".base").CreateUI = function(self, name, ...)
-    return ui.CreateUI(name, self, ...)
+    return ui.CreateUI(name or false, self, ...)
 end
 
 ---Returns an UI Piece with an unique id that was set using :SetUniqueName().

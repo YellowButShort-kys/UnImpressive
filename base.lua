@@ -252,6 +252,9 @@ function base:Draw()
             var:Draw()
             love.graphics.pop()
         end
+        if self.PostPaint then
+            self:PostPaint()
+        end
         love.graphics.pop()
     end
 end
